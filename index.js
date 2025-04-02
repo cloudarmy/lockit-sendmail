@@ -57,13 +57,22 @@ Email.prototype.send = function(type, username, email, done) {
 
     // send email with nodemailer
 
-    var transport = that.transport ? that.transport(config.emailSettings) : config.emailSettings.transporter
-    var transporter = nodemailer.createTransport(transport);
-    transporter.sendMail(options, function(error, res){
-      if(err) {return done(error); }
-      transporter.close(); // shut down the connection pool, no more messages
-      done(null, res);
-    });
+    var transport = that.transport ? that.transport(config.emailSettings) : config.emailSettings.transporter;
+    var sendMail = function(transportToUse) {
+      var transporter = nodemailer.createTransport(transportToUse);
+      transporter.sendMail(options, function(error, res){
+        if(error) {return done(error); }
+        transporter.close(); // shut down the connection pool, no more messages
+        done(null, res);
+      });
+    };
+
+    // Handle case where transport might be a function returning a promise
+    if (typeof transport === 'function') {
+      Promise.resolve(transport()).then(sendMail).catch(done);
+    } else {
+      sendMail(transport);
+    }
   });
 
 };
