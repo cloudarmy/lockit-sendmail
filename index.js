@@ -14,7 +14,7 @@ var ejs = require('ejs');
 var Email = module.exports = function(config) {
   if (!(this instanceof Email)) {return new Email(config); }
   this.template = require(config.emailTemplate);
-  this.transport = require(config.emailType);
+  this.transport = config.emailType ? require(config.emailType) : null;
   this.config = config;
 };
 
@@ -56,7 +56,9 @@ Email.prototype.send = function(type, username, email, done) {
     };
 
     // send email with nodemailer
-    var transporter = nodemailer.createTransport(that.transport(config.emailSettings));
+
+    var transport = that.transport ? that.transport(config.emailSettings) : config.emailSettings.transporter
+    var transporter = nodemailer.createTransport(transport);
     transporter.sendMail(options, function(error, res){
       if(err) {return done(error); }
       transporter.close(); // shut down the connection pool, no more messages
